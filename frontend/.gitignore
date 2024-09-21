@@ -1,0 +1,16 @@
+# Node modules
+node_modules/
+
+# Logs
+npm-debug.log*
+
+# Expo specific
+.expo/
+.expo-shared/
+
+# Environment files
+.env
+
+# OS-generated files
+.DS_Store
+Thumbs.db
