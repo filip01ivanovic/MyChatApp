@@ -1,20 +1,27 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StatusBar, View, Text, TextInput, StyleSheet, FlatList, Image, TouchableOpacity, KeyboardAvoidingView, Platform, Button } from 'react-native';
+import { StatusBar, View, Text, TextInput, StyleSheet, FlatList, Image, TouchableOpacity, KeyboardAvoidingView, Platform, Button, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faChevronLeft } from '@fortawesome/free-solid-svg-icons/faChevronLeft';
+import { faMicrophone } from '@fortawesome/free-solid-svg-icons/faMicrophone';
+import { faTrash } from '@fortawesome/free-solid-svg-icons/faTrash';
+import { faPlay } from '@fortawesome/free-solid-svg-icons/faPlay';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import UserComm from '../api_comm/user';
 import ChatComm from '../api_comm/chat';
 import MessageComm from '../api_comm/message';
 import moment from 'moment';
 import { getSocket } from './util/socket';
+import { Audio } from 'expo-av';
+import {IP, PORT} from '@env';
 
 const Chat = () => {
     const route = useRoute();
     const navigation = useNavigation();
     const { username, profilePhoto } = route.params || {};
 
+    const [userProfilePhoto, setUserProfilePhoto] = useState('https://via.placeholder.com/50');
     const [loggedUsername, setLoggedUsername] = useState('');
     const [loggedEmail, setLoggedEmail] = useState('');
     const [loggedProfilePhoto, setLoggedProfilePhoto] = useState('https://via.placeholder.com/50');
@@ -24,13 +31,14 @@ const Chat = () => {
     const [isParticipant1, setIsParticipant1] = useState(false);
     const [messages, setMessages] = useState([]);
 
+    const userComm = new UserComm();
     const chatComm = new ChatComm();
     const messageComm = new MessageComm();
     const socket = getSocket();
     
     const flatListRef = useRef(null);
 
-    const defaultProfilePhoto = require('../default_profile_photo.jpg');
+    const defaultProfilePhoto = { uri: 'http://' + IP + ':' + PORT + '/files/profile_photos/default_profile_photo.jpg' };
 
     useEffect(() => {
         const checkChatStatus = async () => {
@@ -41,6 +49,10 @@ const Chat = () => {
                     setLoggedUsername(loggedUsername);
                     setLoggedEmail(loggedEmail);
                     setLoggedProfilePhoto(loggedProfilePhoto);
+
+                    const defaultProfilePhotoPath = 'http://' + IP + ':' + PORT + '/files/profile_photos';
+                    const profilePhotoPath = `${defaultProfilePhotoPath}/${profilePhoto}`;
+                    setUserProfilePhoto({ uri: profilePhotoPath });
 
                     const response = await chatComm.getChatForUsers(loggedUsername, username);
                     if ((response.participant1 == loggedUsername && response.participant2 == username)
@@ -169,6 +181,103 @@ const Chat = () => {
         }
     };
 
+    const [secondsElapsed, setSecondsElapsed] = useState(0);
+    const [isRunning, setIsRunning] = useState(false); // Track if the timer is running
+    const intervalRef = useRef(null); // Store interval reference
+
+    // Start the interval
+    const startInterval = () => {
+        if (!isRunning) {
+            setIsRunning(true);
+            intervalRef.current = setInterval(() => {
+            setSecondsElapsed((prev) => prev + 1);
+            }, 1000);
+        }
+    };
+
+    // Stop the interval
+    const stopInterval = () => {
+        if (isRunning) {
+            setSecondsElapsed(0);
+            setIsRunning(false);
+            clearInterval(intervalRef.current);
+        }
+    };
+
+    // Format time to mm:ss
+    const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+    };
+
+    const [recording, setRecording] = React.useState();
+    const [recordingData, setRecordingData] = React.useState();
+
+    async function startRecording() {
+        try {
+            const perm = await Audio.requestPermissionsAsync();
+            if (perm.status === "granted") {
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: true,
+                    playsInSilentModeIOS: true
+                });
+                const { recording } = await Audio.Recording.createAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
+                setRecording(recording);
+
+                startInterval();
+            }
+        } catch (err) {}
+    }
+
+    async function stopRecording() {
+        // setRecording(undefined);
+
+        await recording.stopAndUnloadAsync();
+        // let allRecordings = [...recordings];
+        const { sound, status } = await recording.createNewLoadedSoundAsync();
+        setRecordingData({
+            sound: sound,
+            duration: getDurationFormatted(status.durationMillis),
+            file: recording.getURI()
+        });
+        // allRecordings.push({
+        //     sound: sound,
+        //     duration: getDurationFormatted(status.durationMillis),
+        //     file: recording.getURI()
+        // });
+
+        console.log('Sound:', sound);
+        console.log('Duration:', getDurationFormatted(status.durationMillis));
+        console.log('File:', recording.getURI());
+
+        stopInterval();
+    }
+
+    function getDurationFormatted(milliseconds) {
+        const minutes = milliseconds / 1000 / 60;
+        const seconds = Math.round((minutes - Math.floor(minutes)) * 60);
+        return seconds < 10 ? `${Math.floor(minutes)}:0${seconds}` : `${Math.floor(minutes)}:${seconds}`
+    }
+
+    // function getRecordingLines() {
+    //     return recordings.map((recordingLine, index) => {
+    //         return (
+    //             <View key={index} style={styles.row}>
+    //             <Text style={styles.fill}>
+    //             Recording #{index + 1} | {recordingLine.duration}
+    //             </Text>
+    //             <Button onPress={() => recordingLine.sound.replayAsync()} title="Play"></Button>
+    //             </View>
+    //         );
+    //     });
+    // }
+
+    function clearRecording() {
+        setRecording(null);
+        setRecordingData(null);
+    }
+
     return (
         <SafeAreaView style={styles.backgroundStyle}>
             <StatusBar barStyle="dark-content" />
@@ -184,7 +293,7 @@ const Chat = () => {
                         />
                     </TouchableOpacity>
                     <View style={styles.headerInfo}>
-                        <Image source={defaultProfilePhoto} style={styles.headerPhoto} />
+                        <Image source={userProfilePhoto} style={styles.headerPhoto} />
                         <Text style={styles.headerTitle}>{username}</Text>
                     </View>
                 </View>
@@ -229,17 +338,60 @@ const Chat = () => {
                     )}
                     {chatExists && isChatAccepted && (
                         <>
-                            <TextInput
-                                style={styles.input}
-                                value={message}
-                                onChangeText={(text) => {
-                                    setMessage(text);
-                                    setTimeout(() => {
-                                        flatListRef.current?.scrollToEnd({ animated: true });
-                                    }, 1);
-                                }}
-                                placeholder="Type a message..."
-                            />
+                            {!recordingData && (
+                                <>
+                                    <TouchableOpacity onPress={recording ? stopRecording : startRecording} style={recording ? styles.stopRecordingButton : styles.startRecordingButton}>
+                                        <FontAwesomeIcon 
+                                            icon={faMicrophone} 
+                                            style={styles.microphoneIcon} 
+                                        />
+                                    </TouchableOpacity>
+                                </>
+                            )}
+                            {recording ? (
+                                <>
+                                    {recordingData ? (
+                                        <>
+                                            <TouchableOpacity onPress={clearRecording} style={styles.stopRecordingButton}>
+                                                <FontAwesomeIcon 
+                                                    icon={faTrash} 
+                                                    style={styles.microphoneIcon} 
+                                                />
+                                            </TouchableOpacity>
+                                            <View style={styles.voiceInputContainer}>
+                                                <TouchableOpacity onPress={() => recordingData.sound.replayAsync()} style={styles.playButton}>
+                                                    <FontAwesomeIcon 
+                                                        icon={faPlay} 
+                                                        style={styles.playIcon} 
+                                                    />
+                                                </TouchableOpacity>
+                                                <Text style={styles.voiceInputTimer}>
+                                                    {/* {getDurationFormatted(recording._finalDurationMillis || 0)} */}
+                                                    {recordingData.duration}
+                                                </Text>
+                                            </View>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Text style={styles.timerText}>{formatTime(secondsElapsed)}</Text>
+                                        </>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={message}
+                                        onChangeText={(text) => {
+                                            setMessage(text);
+                                            setTimeout(() => {
+                                                flatListRef.current?.scrollToEnd({ animated: true });
+                                            }, 1);
+                                        }}
+                                        placeholder="Type a message..."
+                                    />
+                                </>
+                            )}
                             <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
                                 <Text style={styles.bottomButtonText}>Send</Text>
                             </TouchableOpacity>
@@ -330,7 +482,7 @@ const styles = StyleSheet.create({
         color: '#000',
         padding: 14,
         borderRadius: 25,
-        marginRight: 8,
+        marginHorizontal: 8,
     },
     invitationSentText: {
         flex: 1,
@@ -383,6 +535,61 @@ const styles = StyleSheet.create({
         color: '#C4C5C6',
         fontSize: 16,
         fontWeight: '700',
+    },
+    microphoneIcon: {
+        color: '#FFF',
+        fontSize: 16,
+    },
+    startRecordingButton: {
+        backgroundColor: '#49CBEB',
+        borderRadius: 25,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    stopRecordingButton: {
+        backgroundColor: '#F00',
+        borderRadius: 25,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    playButton: {
+        backgroundColor: '#FFF',
+        borderRadius: 25,
+        paddingHorizontal: 7,
+        paddingVertical: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    playIcon: {
+        color: '#49CBEB',
+        fontSize: 16,
+    },
+    timerText: {
+        flex: 1,
+        backgroundColor: '#FFF',
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#000',
+        padding: 14,
+        textAlign: 'center',
+    },
+    voiceInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+    },
+    voiceInputTimer: {
+        backgroundColor: '#FFF',
+        fontSize: 16,
+        paddingHorizontal: 7,
+        fontWeight: '700',
+        color: '#000',
+        textAlign: 'center',
     }
 });
 

@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment';
 import UserComm from '../api_comm/user';
 import { getSocket } from './util/socket';
+import {IP, PORT} from '@env';
 
 const Chats = () => {
     const [loggedUsername, setLoggedUsername] = useState('');
@@ -22,7 +23,7 @@ const Chats = () => {
     const userComm = new UserComm();
     const socket = getSocket();
 
-    const defaultProfilePhoto = require('../default_profile_photo.jpg');
+    const defaultProfilePhoto = { uri: 'http://' + IP + ':' + PORT + '/files/profile_photos/default_profile_photo.jpg' };
 
     const fetchChats = async () => {
         try {
@@ -99,16 +100,20 @@ const Chats = () => {
         
         navigation.navigate('Chat', {
             username: otherParticipant,
-            photo: profilePhoto,
+            profilePhoto: profilePhoto,
         });
     };
 
     const renderItem = ({ item }) => {
         const formattedDate = moment(item.chat.lastMessage.sentAt).format('HH:mm, D MMM YY');
 
+        const defaultProfilePhotoPath = 'http://' + IP + ':' + PORT + '/files/profile_photos';
+        const profilePhotoPath = `${defaultProfilePhotoPath}/${item.profilePhoto}`;
+        const profilePhoto = { uri: profilePhotoPath };
+
         return (
             <TouchableOpacity onPress={() => handleChatPress(item)} style={styles.chatRow}>
-                <Image source={defaultProfilePhoto} style={styles.chatPhoto} />
+                <Image source={profilePhoto} style={styles.chatPhoto} />
                 <View style={styles.chatDetails}>
                     <Text style={styles.chatName}>
                     {item.chat.participant1 === loggedUsername ? item.chat.participant2 || 'Unknown' : item.chat.participant1 || 'Unknown'}

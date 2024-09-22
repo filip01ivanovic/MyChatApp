@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserComm from '../api_comm/user';
 // import * as ImagePicker from 'expo-image-picker'; // Uncomment if using Expo ImagePicker
 import { getSocket, disconnectSocket } from './util/socket';
+import {IP, PORT} from '@env';
 
 const Profile = () => {
     const navigation = useNavigation();
@@ -21,10 +22,8 @@ const Profile = () => {
     const userComm = new UserComm();
     const socket = getSocket();
 
-    // const defaultProfilePhoto = require('../../backend/files/profile_photos/default_profile_photo.jpg');
-    const defaultProfilePhoto = require('../default_profile_photo.jpg');
-
-    // Fetch user data from AsyncStorage when the component mounts
+    const defaultProfilePhoto = { uri: 'http://' + IP + ':' + PORT + '/files/profile_photos/default_profile_photo.jpg' };
+    
     useEffect(() => {
         const fetchUserData = async () => {
             try {
@@ -33,8 +32,10 @@ const Profile = () => {
                     const { username, email, profilePhoto } = JSON.parse(userData);
                     setUsername(username);
                     setEmail(email);
-                    const profilePhotoPath = `../${profilePhoto}`;
-                    setProfilePhoto(profilePhoto ? { profilePhotoPath } : defaultProfilePhoto);
+                    setProfilePhoto(profilePhoto);
+                    const defaultProfilePhotoPath = 'http://' + IP + ':' + PORT + '/files/profile_photos';
+                    const profilePhotoPath = `${defaultProfilePhotoPath}/${profilePhoto}`;
+                    setProfilePhoto({ uri: profilePhotoPath });
                 }
             } catch (error) {
                 console.error('Error fetching user data', error);
@@ -153,7 +154,7 @@ const Profile = () => {
                     <View style={styles.container}>
                     
                     <TouchableOpacity onPress={handleProfilePhotoUpdate} style={styles.photoContainer}>
-                        <Image source={defaultProfilePhoto} style={styles.profilePhoto} />
+                        <Image source={profilePhoto} style={styles.profilePhoto} />
                         <Text style={styles.updateText}>Update Profile Photo</Text>
                     </TouchableOpacity>
 

@@ -6,6 +6,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserComm from '../api_comm/user';
 import { getSocket } from './util/socket';
+import {IP, PORT} from '@env';
 
 const Explore = () => {
     const [loggedUsername, setLoggedUsername] = useState('');
@@ -20,7 +21,7 @@ const Explore = () => {
     const userComm = new UserComm();
     const socket = getSocket();
 
-    const defaultProfilePhoto = require('../default_profile_photo.jpg');
+    const defaultProfilePhoto = { uri: 'http://' + IP + ':' + PORT + '/files/profile_photos/default_profile_photo.jpg' };
 
     // Function to fetch users from your backend
     const fetchUsers = async () => {
@@ -93,30 +94,36 @@ const Explore = () => {
     const handleUserPress = (user) => {
         navigation.navigate('Chat', {
             username: user.username,
-            photo: user.profilePhoto
+            profilePhoto: user.profilePhoto
         });
     };
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity onPress={() => handleUserPress(item)} style={styles.resultRow}>
-            <View style={styles.resultLeft}>
-                <Image source={defaultProfilePhoto} style={styles.resultPhoto} />
-                <Text style={styles.resultUsername}>{item.username}</Text>
-            </View>
-            <View style={styles.chatRight}>
-                {item.chatExists && !item.isAccepted && item.unreadMessages > 0 && (
-                    <View style={styles.unreadBadgeGreen}>
-                        <Text style={styles.unreadText}>{item.unreadMessages}</Text>
-                    </View>
-                )}
-                {item.chatExists && item.isAccepted && item.unreadMessages > 0 && (
-                    <View style={styles.unreadBadgeBlue}>
-                        <Text style={styles.unreadText}>{item.unreadMessages}</Text>
-                    </View>
-                )}
-            </View>
-        </TouchableOpacity>
-    );
+    const renderItem = ({ item }) => {
+        const defaultProfilePhotoPath = 'http://' + IP + ':' + PORT + '/files/profile_photos';
+        const profilePhotoPath = `${defaultProfilePhotoPath}/${item.profilePhoto}`;
+        const profilePhoto = { uri: profilePhotoPath };
+
+        return (
+            <TouchableOpacity onPress={() => handleUserPress(item)} style={styles.resultRow}>
+                <View style={styles.resultLeft}>
+                    <Image source={profilePhoto} style={styles.resultPhoto} />
+                    <Text style={styles.resultUsername}>{item.username}</Text>
+                </View>
+                <View style={styles.chatRight}>
+                    {item.chatExists && !item.isAccepted && item.unreadMessages > 0 && (
+                        <View style={styles.unreadBadgeGreen}>
+                            <Text style={styles.unreadText}>{item.unreadMessages}</Text>
+                        </View>
+                    )}
+                    {item.chatExists && item.isAccepted && item.unreadMessages > 0 && (
+                        <View style={styles.unreadBadgeBlue}>
+                            <Text style={styles.unreadText}>{item.unreadMessages}</Text>
+                        </View>
+                    )}
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.backgroundStyle}>
