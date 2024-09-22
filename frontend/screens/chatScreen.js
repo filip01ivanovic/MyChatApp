@@ -120,15 +120,45 @@ const Chat = () => {
         // };
     }, []);
 
+    // const renderMessage = ({ item }) => {
+    //     const formattedDate = moment(item.sentAt).format('HH:mm, D MMM YY');
+    
+    //     return (
+    //         <View style={[styles.messageContainer, item.sender === loggedUsername ? styles.sentMessage : styles.receivedMessage]}>
+    //             <Text style={styles.messageText}>{item.textMessage}</Text>
+    //             <Text style={styles.messageDate}>{formattedDate}</Text>
+    //         </View>
+    //     );
+    // };
+
     const renderMessage = ({ item }) => {
         const formattedDate = moment(item.sentAt).format('HH:mm, D MMM YY');
-    
-        return (
-            <View style={[styles.messageContainer, item.sender === loggedUsername ? styles.sentMessage : styles.receivedMessage]}>
-                <Text style={styles.messageText}>{item.textMessage}</Text>
-                <Text style={styles.messageDate}>{formattedDate}</Text>
-            </View>
-        );
+
+        if (item.messageType === 'text') {
+            return (
+                <View style={[styles.messageContainer, item.sender === loggedUsername ? styles.sentMessage : styles.receivedMessage]}>
+                    <Text style={styles.messageText}>{item.textMessage}</Text>
+                    <Text style={styles.messageDate}>{formattedDate}</Text>
+                </View>
+            );
+        } else if (item.messageType === 'voice') {
+            return (
+                <View style={[styles.messageContainer, item.sender === loggedUsername ? styles.sentMessage : styles.receivedMessage]}>
+                    <TouchableOpacity onPress={() => {
+                        const sound = new Audio.Sound();
+                        sound.loadAsync({ uri: item.voiceMessageUrl }).then(() => {
+                            sound.replayAsync();
+                        });
+                    }} style={styles.playButton}>
+                        <FontAwesomeIcon 
+                            icon={faPlay} 
+                            style={styles.playIcon} 
+                        />
+                    </TouchableOpacity>
+                    <Text style={styles.messageDate}>{formattedDate}</Text>
+                </View>
+            );
+        }
     };
 
     const handleInvitation = () => {
@@ -138,7 +168,7 @@ const Chat = () => {
                 receiver: username,
                 messageType: 'text',
                 textMessage: message,
-                voiceMessageUrl: null,
+                voiceMessageUrl: ''
             });
             setMessage('');
 
@@ -165,16 +195,20 @@ const Chat = () => {
     };
 
     const handleSend = () => {
-        if (message != '') {
+        if (message !== '' || recordingData) {
             socket.emit('newMessage', {
                 sender: loggedUsername,
                 receiver: username,
-                messageType: 'text',
+                messageType: recordingData ? 'voice' : 'text',
                 textMessage: message,
-                voiceMessageUrl: null,
+                voiceMessageSound: recordingData ? recordingData.sound : '',
+                voiceMessageDuration: recordingData ? recordingData.duration : '',
+                voiceMessageData: recordingData ? recordingData.data : '',
             });
-            setMessage('');
 
+            setMessage('');
+            clearRecording();
+    
             setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
             }, 100);
@@ -230,27 +264,47 @@ const Chat = () => {
         } catch (err) {}
     }
 
+    // async function stopRecording() {
+    //     // setRecording(undefined);
+
+    //     await recording.stopAndUnloadAsync();
+    //     // let allRecordings = [...recordings];
+    //     const { sound, status } = await recording.createNewLoadedSoundAsync();
+    //     setRecordingData({
+    //         sound: sound,
+    //         duration: getDurationFormatted(status.durationMillis),
+    //         file: recording.getURI()
+    //     });
+    //     // allRecordings.push({
+    //     //     sound: sound,
+    //     //     duration: getDurationFormatted(status.durationMillis),
+    //     //     file: recording.getURI()
+    //     // });
+
+    //     console.log('Sound:', sound);
+    //     console.log('Duration:', getDurationFormatted(status.durationMillis));
+    //     console.log('File:', recording.getURI());
+
+    //     stopInterval();
+    // }
+
     async function stopRecording() {
-        // setRecording(undefined);
-
         await recording.stopAndUnloadAsync();
-        // let allRecordings = [...recordings];
         const { sound, status } = await recording.createNewLoadedSoundAsync();
-        setRecordingData({
-            sound: sound,
-            duration: getDurationFormatted(status.durationMillis),
-            file: recording.getURI()
-        });
-        // allRecordings.push({
-        //     sound: sound,
-        //     duration: getDurationFormatted(status.durationMillis),
-        //     file: recording.getURI()
-        // });
-
-        console.log('Sound:', sound);
-        console.log('Duration:', getDurationFormatted(status.durationMillis));
-        console.log('File:', recording.getURI());
-
+        const uri = recording.getURI();
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+            const fileData = reader.result;
+            setRecordingData({
+                sound: sound,
+                duration: getDurationFormatted(status.durationMillis),
+                data: fileData
+            });
+        };
+    
         stopInterval();
     }
 

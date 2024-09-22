@@ -30,7 +30,6 @@ const Login = () => {
                 await AsyncStorage.setItem('navId', '2');
     
                 // Connect to WebSocket server after successful login
-                // const socket = createSocket('http://192.168.1.60:4000');
                 const socket = createSocket('http://' + IP + ':' + PORT);
 
                 socket.on('connect', () => {

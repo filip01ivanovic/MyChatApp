@@ -2,8 +2,13 @@ import express from 'express';
 import ChatModel from '../models/chat';
 import MessageModel from '../models/message';
 import UserModel from '../models/user';
+import fs from 'fs';
+import path from 'path';
+
+require('dotenv').config();
 
 export class MessageController {
+
     public getMessagesForChat = async (req: express.Request, res: express.Response) => {
         const { participant1, participant2 } = req.query;
 
@@ -87,8 +92,56 @@ export class MessageController {
         }
     }
 
-    public static async addNewMessage(sender: any, receiver: any, messageType: any, textMessage: any, voiceMessageUrl: any) {
-        if (!sender || !receiver || !messageType || (!textMessage && !voiceMessageUrl)) {
+    // public static async addNewMessage(sender: any, receiver: any, messageType: any, textMessage: any, voiceMessageSound: any, voiceMessageDuration: any, voiceMessageData: any) {
+    //     if (!sender || !receiver || !messageType || (!textMessage && !voiceMessageData)) {
+    //         throw new Error('Sender ID, receiver ID, message type and message are required');
+    //     }
+
+    //     try {
+    //         let chat = await ChatModel.findOne({
+    //             $or: [
+    //                 { participant1: sender, participant2: receiver },
+    //                 { participant1: receiver, participant2: sender }
+    //             ]
+    //         });
+
+    //         const sentAt = new Date();
+
+    //         if (!chat) {
+    //             throw new Error('Chat not found');
+    //         }
+
+    //         chat.lastMessage = {
+    //             messageType,
+    //             text: messageType === 'voice' ? 'Voice message' : (textMessage || ''),
+    //             sentAt
+    //         };
+
+    //         await chat.save();
+
+    //         console.log('Voice message data:', voiceMessageData);
+
+    //         const newMessage = new MessageModel({
+    //             sender,
+    //             receiver,
+    //             messageType,
+    //             textMessage,
+    //             voiceMessageData,
+    //             sentAt
+    //         });
+
+    //         await newMessage.save();
+
+    //         return newMessage;
+
+    //     } catch (error) {
+    //         console.error('Error sending message:', error);
+    //         throw new Error('Server error sending message');
+    //     }
+    // }
+
+    public static async addNewMessage(sender: any, receiver: any, messageType: any, textMessage: any, voiceMessageSound: any, voiceMessageDuration: any, voiceMessageData: any) {
+        if (!sender || !receiver || !messageType || (!textMessage && !voiceMessageData)) {
             throw new Error('Sender ID, receiver ID, message type and message are required');
         }
 
@@ -114,6 +167,16 @@ export class MessageController {
 
             await chat.save();
 
+            let voiceMessageUrl = '';
+            // how to save voice message data to file
+            if (voiceMessageData) {
+                const voiceMessageFileName = `${sender}_${receiver}_${sentAt.getTime()}.wav`;
+                const voiceMessageFilePath = path.join(__dirname, `../../files/voice_messages/${voiceMessageFileName}`);
+                const base64Data = voiceMessageData.split(',')[1]; // Remove the data URL prefix
+                fs.writeFileSync(voiceMessageFilePath, base64Data, 'base64');
+                voiceMessageUrl = `http://${process.env.IP}:${process.env.PORT}/files/voice_messages/${voiceMessageFileName}`;
+            }
+            
             const newMessage = new MessageModel({
                 sender,
                 receiver,
