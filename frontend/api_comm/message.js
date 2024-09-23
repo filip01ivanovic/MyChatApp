@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { IP, PORT } from '@env';
 
 class MessageComm {
-  baseUrl = 'http://192.168.1.60:4000/messages';
+    baseUrl = 'http://' + IP + ':' + PORT + '/messages';
 
     async getMessagesForChat(participant1, participant2) {
         try {

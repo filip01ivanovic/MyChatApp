@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { IP, PORT } from '@env';
 
 class UserComm {
-  baseUrl = 'http://192.168.1.60:4000/users'; 
+  baseUrl = 'http://' + IP + ':' + PORT + '/users'; 
 
   async register(username, password, repeatPassword, email) {
     try {

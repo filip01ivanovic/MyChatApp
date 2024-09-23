@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { IP, PORT } from '@env';
 
 class ChatComm {
-  baseUrl = 'http://192.168.1.60:4000/chats';
+  baseUrl = 'http://' + IP + ':' + PORT + '/chats';
 
   async getChatForUsers(participant1, participant2) {
     try {
