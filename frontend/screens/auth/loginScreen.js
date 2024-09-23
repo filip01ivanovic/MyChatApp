@@ -5,7 +5,6 @@ import UserComm from '../../api_comm/user';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createSocket } from '../util/socket';
-// import dotenv from 'dotenv';
 import {IP, PORT} from '@env';
 
 const Login = () => {
@@ -18,8 +17,6 @@ const Login = () => {
     const [isUsernameFocused, setUsernameFocused] = useState(false);
     const [isPasswordFocused, setPasswordFocused] = useState(false);
 
-    // dotenv.config();
-
     const loginAction = async (username, password) => {
         try {
             const userComm = new UserComm();
@@ -29,7 +26,6 @@ const Login = () => {
                 await AsyncStorage.setItem('userData', JSON.stringify(response.user));
                 await AsyncStorage.setItem('navId', '2');
     
-                // Connect to WebSocket server after successful login
                 const socket = createSocket('http://' + IP + ':' + PORT);
 
                 socket.on('connect', () => {
@@ -87,10 +83,6 @@ const Login = () => {
                             autoCapitalize='none'
                         />
                     </View>
-
-                    {/* <TouchableOpacity>
-                        <Text style={styles.forgotPassword}>Forgot password?</Text>
-                    </TouchableOpacity> */}
 
                     <View style={styles.textWrapper}>
                         <TouchableOpacity

@@ -23,11 +23,9 @@ const Explore = () => {
 
     const defaultProfilePhoto = { uri: 'http://' + IP + ':' + PORT + '/files/profile_photos/default_profile_photo.jpg' };
 
-    // Function to fetch users from your backend
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            // Fetch user data from AsyncStorage
             const userData = await AsyncStorage.getItem('userData');
             if (!userData) {
                 Alert.alert('Error', 'No user data found');

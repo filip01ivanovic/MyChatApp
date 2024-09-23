@@ -5,7 +5,7 @@ import Navigation from './util/navigation';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserComm from '../api_comm/user';
-// import * as ImagePicker from 'expo-image-picker'; // Uncomment if using Expo ImagePicker
+// import * as ImagePicker from 'expo-image-picker';
 import { getSocket, disconnectSocket } from './util/socket';
 import {IP, PORT} from '@env';
 
@@ -95,7 +95,6 @@ const Profile = () => {
         try {
             const response = await userComm.updateEmail(username, email);
             Alert.alert('Success', 'Email updated successfully');
-            // Update AsyncStorage
             await saveData('userData', JSON.stringify({ username, email, profilePhoto }));
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Failed to update email';
@@ -125,10 +124,8 @@ const Profile = () => {
         try {
             await AsyncStorage.removeItem('userData');
 
-            // logoutuser from backend
             socket.emit('userLogout', username);
 
-            // Disconnect the socket
             disconnectSocket();
 
             navigation.replace('Login');

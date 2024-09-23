@@ -41,7 +41,6 @@ export class ChatController {
                 ]
             });
 
-            // Create a map to store message counts and chat status for each user
             const messagesMap: { 
                 [key: string]: { 
                     totalMessages: number, 
@@ -50,12 +49,10 @@ export class ChatController {
                 } 
             } = {};
     
-            // Iterate over each chat to count total and unread messages and track chat status
             for (const chat of chats) {
                 const otherParticipant = chat.participant1 === username ? chat.participant2 : chat.participant1;
     
                 if (otherParticipant) {
-                    // Count total messages between both participants (both sent and received)
                     const totalMessagesCount = await MessageModel.countDocuments({
                         $or: [
                             { sender: username, receiver: otherParticipant },
@@ -63,14 +60,12 @@ export class ChatController {
                         ]
                     });
     
-                    // Count unread messages sent by the other participant (messages the current user has not read)
                     const unreadMessagesCount = await MessageModel.countDocuments({
                         sender: otherParticipant,
                         receiver: username,
                         isRead: false
                     });
     
-                    // Initialize map entry if not present
                     if (!messagesMap[otherParticipant]) {
                         messagesMap[otherParticipant] = {
                             totalMessages: 0,
@@ -79,13 +74,11 @@ export class ChatController {
                         };
                     }
     
-                    // Update the map with the counts
                     messagesMap[otherParticipant].totalMessages += totalMessagesCount;
                     messagesMap[otherParticipant].unreadMessages += unreadMessagesCount;
                 }
             }
     
-            // Map over the users and append the total, unread messages count, chat existence, and acceptance status
             const chatsWithMessageCounts = chats.map(chat => {
                 const otherParticipant = chat.participant1 === username ? chat.participant2 : chat.participant1;
             
@@ -97,7 +90,6 @@ export class ChatController {
                 };
             });
             
-            // Return the users with message counts and chat status
             res.status(200).json(chatsWithMessageCounts);
         } catch (error) {
             res.status(500).send({ message: 'Error fetching chats', error });

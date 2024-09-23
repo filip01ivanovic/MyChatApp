@@ -85,7 +85,7 @@ export class UserController {
     updateUsername = async (req: express.Request, res: express.Response) => {
         const { username, newUsername } = req.body;
     
-        // Validation checks for new username
+        // Validation checks for the new username
         if (!newUsername || newUsername.length < 4 || newUsername.length > 20) {
             return res.status(400).json({ message: 'New username must be between 4 and 20 characters' });
         }
@@ -96,7 +96,7 @@ export class UserController {
                 return res.status(400).json({ message: 'User not found 2' });
             }
     
-            // Check if the new username is already taken
+            // Check if the new username is taken
             const existingUser = await UserModel.findOne({ username: newUsername });
             if (existingUser) {
                 return res.status(400).json({ message: 'Username is already taken' });
@@ -116,7 +116,7 @@ export class UserController {
     updateEmail = async (req: express.Request, res: express.Response) => {
         const { username, newEmail } = req.body;
     
-        // Email validation
+        // Validation check for the new email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!newEmail || !emailRegex.test(newEmail)) {
             return res.status(400).json({ message: 'Invalid email format' });
@@ -143,7 +143,7 @@ export class UserController {
     changePassword = async (req: express.Request, res: express.Response) => {
         const { username, oldPassword, newPassword, repeatNewPassword } = req.body;
     
-        // Validation checks
+        // Validation checks for the new password
         if (!newPassword || newPassword.length < 4 || newPassword.length > 20) {
             return res.status(400).json({ message: 'New password must be between 4 and 20 characters' });
         }
@@ -181,13 +181,9 @@ export class UserController {
         const { username } = req.body;
     
         try {
-            // Fetch all users except the current user
-            const users = await UserModel.find({ username: { $ne: username } }, 'username email profilePhoto'); // Exclude the current user
-    
-            // Fetch all chats involving the current user
+            const users = await UserModel.find({ username: { $ne: username } }, 'username email profilePhoto');
             const chats = await ChatModel.find({ $or: [{ participant1: username }, { participant2: username }] });
     
-            // Create a map to store message counts and chat status for each user
             const messagesMap: { 
                 [key: string]: { 
                     totalMessages: number, 
@@ -197,12 +193,10 @@ export class UserController {
                 } 
             } = {};
     
-            // Iterate over each chat to count total and unread messages and track chat status
             for (const chat of chats) {
                 const otherParticipant = chat.participant1 === username ? chat.participant2 : chat.participant1;
     
                 if (otherParticipant) {
-                    // Count total messages between both participants (both sent and received)
                     const totalMessagesCount = await MessageModel.countDocuments({
                         $or: [
                             { sender: username, receiver: otherParticipant },
@@ -210,14 +204,12 @@ export class UserController {
                         ]
                     });
     
-                    // Count unread messages sent by the other participant (messages the current user has not read)
                     const unreadMessagesCount = await MessageModel.countDocuments({
                         sender: otherParticipant,
                         receiver: username,
                         isRead: false
                     });
     
-                    // Initialize map entry if not present
                     if (!messagesMap[otherParticipant]) {
                         messagesMap[otherParticipant] = {
                             totalMessages: 0,
@@ -227,15 +219,13 @@ export class UserController {
                         };
                     }
     
-                    // Update the map with the counts
                     messagesMap[otherParticipant].totalMessages += totalMessagesCount;
                     messagesMap[otherParticipant].unreadMessages += unreadMessagesCount;
                 }
             }
     
-            // Map over the users and append the total, unread messages count, chat existence, and acceptance status
             const usersWithMessageCounts = users.map(user => ({
-                username: user.username || '',  // Ensure it's a string or provide a fallback
+                username: user.username || '',
                 email: user.email || '',
                 profilePhoto: user.profilePhoto || '',
                 totalMessages: messagesMap[user.username || '']?.totalMessages || 0,
@@ -244,7 +234,6 @@ export class UserController {
                 isAccepted: messagesMap[user.username || '']?.isAccepted || false
             }));
     
-            // Return the users with message counts and chat status
             return res.status(200).json(usersWithMessageCounts);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -256,17 +245,14 @@ export class UserController {
         const { username } = req.query;
 
         try {
-            // Find the user by username, only select specific fields: username, email, and profilePhoto
             const user = await UserModel.findOne({ username }, 'username email profilePhoto');
             
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            // If user is found, send back the user data
             return res.status(200).json(user);
         } catch (error) {
-            // If there's an error during the database query, return a 500 response
             return res.status(500).json({ message: 'Error fetching user', error });
         }
     }; 

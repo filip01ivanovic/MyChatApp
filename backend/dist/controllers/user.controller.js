@@ -107,7 +107,7 @@ class UserController {
         });
         this.updateUsername = (req, res) => __awaiter(this, void 0, void 0, function* () {
             const { username, newUsername } = req.body;
-            // Validation checks for new username
+            // Validation checks for the new username
             if (!newUsername || newUsername.length < 4 || newUsername.length > 20) {
                 return res.status(400).json({ message: 'New username must be between 4 and 20 characters' });
             }
@@ -116,7 +116,7 @@ class UserController {
                 if (!user) {
                     return res.status(400).json({ message: 'User not found 2' });
                 }
-                // Check if the new username is already taken
+                // Check if the new username is taken
                 const existingUser = yield user_1.default.findOne({ username: newUsername });
                 if (existingUser) {
                     return res.status(400).json({ message: 'Username is already taken' });
@@ -132,7 +132,7 @@ class UserController {
         });
         this.updateEmail = (req, res) => __awaiter(this, void 0, void 0, function* () {
             const { username, newEmail } = req.body;
-            // Email validation
+            // Validation check for the new email
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!newEmail || !emailRegex.test(newEmail)) {
                 return res.status(400).json({ message: 'Invalid email format' });
@@ -154,7 +154,7 @@ class UserController {
         });
         this.changePassword = (req, res) => __awaiter(this, void 0, void 0, function* () {
             const { username, oldPassword, newPassword, repeatNewPassword } = req.body;
-            // Validation checks
+            // Validation checks for the new password
             if (!newPassword || newPassword.length < 4 || newPassword.length > 20) {
                 return res.status(400).json({ message: 'New password must be between 4 and 20 characters' });
             }
@@ -185,30 +185,23 @@ class UserController {
         this.getAllUsersWithUnreadMessages = (req, res) => __awaiter(this, void 0, void 0, function* () {
             const { username } = req.body;
             try {
-                // Fetch all users except the current user
-                const users = yield user_1.default.find({ username: { $ne: username } }, 'username email profilePhoto'); // Exclude the current user
-                // Fetch all chats involving the current user
+                const users = yield user_1.default.find({ username: { $ne: username } }, 'username email profilePhoto');
                 const chats = yield chat_1.default.find({ $or: [{ participant1: username }, { participant2: username }] });
-                // Create a map to store message counts and chat status for each user
                 const messagesMap = {};
-                // Iterate over each chat to count total and unread messages and track chat status
                 for (const chat of chats) {
                     const otherParticipant = chat.participant1 === username ? chat.participant2 : chat.participant1;
                     if (otherParticipant) {
-                        // Count total messages between both participants (both sent and received)
                         const totalMessagesCount = yield message_1.default.countDocuments({
                             $or: [
                                 { sender: username, receiver: otherParticipant },
                                 { sender: otherParticipant, receiver: username }
                             ]
                         });
-                        // Count unread messages sent by the other participant (messages the current user has not read)
                         const unreadMessagesCount = yield message_1.default.countDocuments({
                             sender: otherParticipant,
                             receiver: username,
                             isRead: false
                         });
-                        // Initialize map entry if not present
                         if (!messagesMap[otherParticipant]) {
                             messagesMap[otherParticipant] = {
                                 totalMessages: 0,
@@ -217,12 +210,10 @@ class UserController {
                                 isAccepted: chat.isAccepted || false
                             };
                         }
-                        // Update the map with the counts
                         messagesMap[otherParticipant].totalMessages += totalMessagesCount;
                         messagesMap[otherParticipant].unreadMessages += unreadMessagesCount;
                     }
                 }
-                // Map over the users and append the total, unread messages count, chat existence, and acceptance status
                 const usersWithMessageCounts = users.map(user => {
                     var _a, _b, _c;
                     return ({
@@ -235,7 +226,6 @@ class UserController {
                         isAccepted: ((_c = messagesMap[user.username || '']) === null || _c === void 0 ? void 0 : _c.isAccepted) || false
                     });
                 });
-                // Return the users with message counts and chat status
                 return res.status(200).json(usersWithMessageCounts);
             }
             catch (error) {
@@ -246,16 +236,13 @@ class UserController {
         this.getUserByUsername = (req, res) => __awaiter(this, void 0, void 0, function* () {
             const { username } = req.query;
             try {
-                // Find the user by username, only select specific fields: username, email, and profilePhoto
                 const user = yield user_1.default.findOne({ username }, 'username email profilePhoto');
                 if (!user) {
                     return res.status(404).json({ message: 'User not found' });
                 }
-                // If user is found, send back the user data
                 return res.status(200).json(user);
             }
             catch (error) {
-                // If there's an error during the database query, return a 500 response
                 return res.status(500).json({ message: 'Error fetching user', error });
             }
         });

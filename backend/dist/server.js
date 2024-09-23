@@ -22,7 +22,7 @@ const chat_router_1 = __importDefault(require("./routers/chat.router"));
 const message_router_1 = __importDefault(require("./routers/message.router"));
 const message_controller_1 = require("./controllers/message.controller");
 const chat_controller_1 = require("./controllers/chat.controller");
-// Initialize Express app
+// Express app
 const app = (0, express_1.default)();
 require('dotenv').config();
 // Middleware
@@ -41,9 +41,9 @@ router.use('/chats', chat_router_1.default);
 router.use('/messages', message_router_1.default);
 router.use('/files', express_1.default.static('files'));
 app.use("/", router);
-// HTTP server to integrate with Socket.io
+// HTTP server
 const httpServer = http_1.default.createServer(app);
-// Initialize Socket.io server and attach to HTTP server
+// Socket.io server
 const io = new socket_io_1.Server(httpServer, {
     cors: {
         origin: "*",
@@ -152,7 +152,7 @@ io.on('connect', (socket) => {
         }
     });
 });
-// Start HTTP server with Socket.io listening on port 4000
+// Starting HTTP server with Socket.io listening on port 4000
 httpServer.listen(process.env.PORT, () => {
     console.log('Server with WebSockets running on port 4000');
 });

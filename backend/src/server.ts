@@ -10,7 +10,7 @@ import messageRouter from './routers/message.router';
 import { MessageController } from './controllers/message.controller';
 import { ChatController } from './controllers/chat.controller';
 
-// Initialize Express app
+// Express app
 const app = express();
 
 require('dotenv').config();
@@ -34,13 +34,13 @@ router.use('/messages', messageRouter);
 router.use('/files', express.static('files'));
 app.use("/", router);
 
-// HTTP server to integrate with Socket.io
+// HTTP server
 const httpServer = http.createServer(app);
 
-// Initialize Socket.io server and attach to HTTP server
+// Socket.io server
 const io = new Server(httpServer, {
     cors: {
-        origin: "*", // Allow cross-origin requests (adjust according to your needs)
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
@@ -53,13 +53,11 @@ io.on('connect', (socket) => {
     socket.on('userLogin', (username: string) => {
         userSocketMap[username] = socket.id;
         console.log(`User ${username} connected with socket ID: ${socket.id}`);
-
         console.log('User socket map:', userSocketMap);
     });
 
     socket.on('initialMessage', async (messageData) => {
         console.log('Initial message received:', messageData);
-
         const { sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageUrl } = messageData;
         
         try {
@@ -83,7 +81,6 @@ io.on('connect', (socket) => {
 
     socket.on('rejectChat', async (chatData) => {
         console.log('Reject chat received:', chatData);
-
         const { participant1, participant2 } = chatData;
 
         try {
@@ -107,7 +104,6 @@ io.on('connect', (socket) => {
 
     socket.on('acceptChat', async (chatData) => {
         console.log('Accept chat received:', chatData);
-
         const { participant1, participant2 } = chatData;
 
         try {
@@ -131,7 +127,6 @@ io.on('connect', (socket) => {
 
     socket.on('newMessage', async (messageData) => {
         console.log('New message received:', messageData);
-
         const { sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageData } = messageData;
 
         try {
@@ -163,7 +158,7 @@ io.on('connect', (socket) => {
     });
 });
 
-// Start HTTP server with Socket.io listening on port 4000
+// Starting HTTP server with Socket.io listening on port 4000
 httpServer.listen(process.env.PORT, () => {
     console.log('Server with WebSockets running on port 4000');
 });

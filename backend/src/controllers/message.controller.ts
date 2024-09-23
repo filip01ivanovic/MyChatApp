@@ -124,7 +124,7 @@ export class MessageController {
             if (voiceMessageData) {
                 const voiceMessageFileName = `${sender}_${receiver}_${sentAt.getTime()}.wav`;
                 const voiceMessageFilePath = path.join(__dirname, `../../files/voice_messages/${voiceMessageFileName}`);
-                const base64Data = voiceMessageData.split(',')[1]; // Remove the data URL prefix
+                const base64Data = voiceMessageData.split(',')[1];
                 fs.writeFileSync(voiceMessageFilePath, base64Data, 'base64');
                 voiceMessageUrl = `http://${process.env.IP}:${process.env.PORT}/files/voice_messages/${voiceMessageFileName}`;
             }
