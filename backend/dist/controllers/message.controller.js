@@ -71,8 +71,27 @@ class MessageController {
                 res.status(500).json({ message: 'Server error setting messages to read' });
             }
         });
+        this.setOneMessageToRead = (req, res) => __awaiter(this, void 0, void 0, function* () {
+            const { _id } = req.body;
+            if (!_id) {
+                return res.status(400).json({ message: 'Message ID is required' });
+            }
+            try {
+                const message = yield message_1.default.findById(_id);
+                if (!message) {
+                    return res.status(404).json({ message: 'Message not found' });
+                }
+                message.isRead = true;
+                yield message.save();
+                res.status(200).json({ message: 'Message set to read' });
+            }
+            catch (error) {
+                console.error('Error setting message to read:', error);
+                res.status(500).json({ message: 'Server error setting message to read' });
+            }
+        });
     }
-    static sendInitialMessage(sender, receiver, messageType, textMessage, voiceMessageUrl) {
+    static sendInitialMessage(sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageUrl) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!sender || !receiver || !messageType || (!textMessage && !voiceMessageUrl)) {
                 throw new Error('Sender ID, receiver ID, message type and message are required');
@@ -103,6 +122,7 @@ class MessageController {
                     receiver,
                     messageType,
                     textMessage,
+                    voiceMessageDuration,
                     voiceMessageUrl,
                     sentAt
                 });
@@ -115,44 +135,7 @@ class MessageController {
             }
         });
     }
-    // public static async addNewMessage(sender: any, receiver: any, messageType: any, textMessage: any, voiceMessageSound: any, voiceMessageDuration: any, voiceMessageData: any) {
-    //     if (!sender || !receiver || !messageType || (!textMessage && !voiceMessageData)) {
-    //         throw new Error('Sender ID, receiver ID, message type and message are required');
-    //     }
-    //     try {
-    //         let chat = await ChatModel.findOne({
-    //             $or: [
-    //                 { participant1: sender, participant2: receiver },
-    //                 { participant1: receiver, participant2: sender }
-    //             ]
-    //         });
-    //         const sentAt = new Date();
-    //         if (!chat) {
-    //             throw new Error('Chat not found');
-    //         }
-    //         chat.lastMessage = {
-    //             messageType,
-    //             text: messageType === 'voice' ? 'Voice message' : (textMessage || ''),
-    //             sentAt
-    //         };
-    //         await chat.save();
-    //         console.log('Voice message data:', voiceMessageData);
-    //         const newMessage = new MessageModel({
-    //             sender,
-    //             receiver,
-    //             messageType,
-    //             textMessage,
-    //             voiceMessageData,
-    //             sentAt
-    //         });
-    //         await newMessage.save();
-    //         return newMessage;
-    //     } catch (error) {
-    //         console.error('Error sending message:', error);
-    //         throw new Error('Server error sending message');
-    //     }
-    // }
-    static addNewMessage(sender, receiver, messageType, textMessage, voiceMessageSound, voiceMessageDuration, voiceMessageData) {
+    static addNewMessage(sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageData) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!sender || !receiver || !messageType || (!textMessage && !voiceMessageData)) {
                 throw new Error('Sender ID, receiver ID, message type and message are required');
@@ -175,7 +158,6 @@ class MessageController {
                 };
                 yield chat.save();
                 let voiceMessageUrl = '';
-                // how to save voice message data to file
                 if (voiceMessageData) {
                     const voiceMessageFileName = `${sender}_${receiver}_${sentAt.getTime()}.wav`;
                     const voiceMessageFilePath = path_1.default.join(__dirname, `../../files/voice_messages/${voiceMessageFileName}`);
@@ -188,6 +170,7 @@ class MessageController {
                     receiver,
                     messageType,
                     textMessage,
+                    voiceMessageDuration,
                     voiceMessageUrl,
                     sentAt
                 });

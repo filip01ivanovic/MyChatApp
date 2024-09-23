@@ -11,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserComm from '../api_comm/user';
 import ChatComm from '../api_comm/chat';
 import MessageComm from '../api_comm/message';
-import moment from 'moment';
+import moment, { duration } from 'moment';
 import { getSocket } from './util/socket';
 import { Audio } from 'expo-av';
 import {IP, PORT} from '@env';
@@ -88,6 +88,7 @@ const Chat = () => {
         // Listen for new messages from the backend
         socket.on('newMessageSuccess', (newMessage) => {
             setMessages((prevMessages) => [...prevMessages, newMessage]);
+            messageComm.setOneMessageToRead(newMessage._id);
 
             // Scroll to the bottom after adding the new message
             setTimeout(() => {
@@ -120,17 +121,6 @@ const Chat = () => {
         // };
     }, []);
 
-    // const renderMessage = ({ item }) => {
-    //     const formattedDate = moment(item.sentAt).format('HH:mm, D MMM YY');
-    
-    //     return (
-    //         <View style={[styles.messageContainer, item.sender === loggedUsername ? styles.sentMessage : styles.receivedMessage]}>
-    //             <Text style={styles.messageText}>{item.textMessage}</Text>
-    //             <Text style={styles.messageDate}>{formattedDate}</Text>
-    //         </View>
-    //     );
-    // };
-
     const renderMessage = ({ item }) => {
         const formattedDate = moment(item.sentAt).format('HH:mm, D MMM YY');
 
@@ -144,17 +134,19 @@ const Chat = () => {
         } else if (item.messageType === 'voice') {
             return (
                 <View style={[styles.messageContainer, item.sender === loggedUsername ? styles.sentMessage : styles.receivedMessage]}>
-                    <TouchableOpacity onPress={() => {
-                        const sound = new Audio.Sound();
-                        sound.loadAsync({ uri: item.voiceMessageUrl }).then(() => {
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity onPress={async () => {
+                            const sound = new Audio.Sound();
+                            await sound.loadAsync({ uri: item.voiceMessageUrl });
                             sound.replayAsync();
-                        });
-                    }} style={styles.playButton}>
-                        <FontAwesomeIcon 
-                            icon={faPlay} 
-                            style={styles.playIcon} 
-                        />
-                    </TouchableOpacity>
+                        }} style={styles.messagePlayButton}>
+                            <FontAwesomeIcon 
+                                icon={faPlay} 
+                                style={styles.messagePlayIcon} 
+                            />
+                        </TouchableOpacity>
+                        <Text style={styles.messageDuration}>{item.voiceMessageDuration}</Text>
+                    </View>
                     <Text style={styles.messageDate}>{formattedDate}</Text>
                 </View>
             );
@@ -168,6 +160,7 @@ const Chat = () => {
                 receiver: username,
                 messageType: 'text',
                 textMessage: message,
+                voiceMessageDuration: '',
                 voiceMessageUrl: ''
             });
             setMessage('');
@@ -201,7 +194,6 @@ const Chat = () => {
                 receiver: username,
                 messageType: recordingData ? 'voice' : 'text',
                 textMessage: message,
-                voiceMessageSound: recordingData ? recordingData.sound : '',
                 voiceMessageDuration: recordingData ? recordingData.duration : '',
                 voiceMessageData: recordingData ? recordingData.data : '',
             });
@@ -264,30 +256,6 @@ const Chat = () => {
         } catch (err) {}
     }
 
-    // async function stopRecording() {
-    //     // setRecording(undefined);
-
-    //     await recording.stopAndUnloadAsync();
-    //     // let allRecordings = [...recordings];
-    //     const { sound, status } = await recording.createNewLoadedSoundAsync();
-    //     setRecordingData({
-    //         sound: sound,
-    //         duration: getDurationFormatted(status.durationMillis),
-    //         file: recording.getURI()
-    //     });
-    //     // allRecordings.push({
-    //     //     sound: sound,
-    //     //     duration: getDurationFormatted(status.durationMillis),
-    //     //     file: recording.getURI()
-    //     // });
-
-    //     console.log('Sound:', sound);
-    //     console.log('Duration:', getDurationFormatted(status.durationMillis));
-    //     console.log('File:', recording.getURI());
-
-    //     stopInterval();
-    // }
-
     async function stopRecording() {
         await recording.stopAndUnloadAsync();
         const { sound, status } = await recording.createNewLoadedSoundAsync();
@@ -313,19 +281,6 @@ const Chat = () => {
         const seconds = Math.round((minutes - Math.floor(minutes)) * 60);
         return seconds < 10 ? `${Math.floor(minutes)}:0${seconds}` : `${Math.floor(minutes)}:${seconds}`
     }
-
-    // function getRecordingLines() {
-    //     return recordings.map((recordingLine, index) => {
-    //         return (
-    //             <View key={index} style={styles.row}>
-    //             <Text style={styles.fill}>
-    //             Recording #{index + 1} | {recordingLine.duration}
-    //             </Text>
-    //             <Button onPress={() => recordingLine.sound.replayAsync()} title="Play"></Button>
-    //             </View>
-    //         );
-    //     });
-    // }
 
     function clearRecording() {
         setRecording(null);
@@ -420,7 +375,6 @@ const Chat = () => {
                                                     />
                                                 </TouchableOpacity>
                                                 <Text style={styles.voiceInputTimer}>
-                                                    {/* {getDurationFormatted(recording._finalDurationMillis || 0)} */}
                                                     {recordingData.duration}
                                                 </Text>
                                             </View>
@@ -609,6 +563,17 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    messageDuration: {
+        fontSize: 16,
+        color: '#FFF',
+    },
+    messagePlayButton: {
+        padding: 10,
+    },
+    messagePlayIcon: {
+        color: '#FFF',
+        fontSize: 16,
     },
     playButton: {
         backgroundColor: '#FFF',

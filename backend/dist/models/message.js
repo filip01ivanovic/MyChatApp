@@ -12,6 +12,7 @@ const messageSchema = new mongoose_1.default.Schema({
         enum: ['text', 'voice']
     },
     textMessage: String,
+    voiceMessageDuration: String,
     voiceMessageUrl: String,
     sentAt: {
         type: Date,

@@ -60,10 +60,10 @@ io.on('connect', (socket) => {
     socket.on('initialMessage', async (messageData) => {
         console.log('Initial message received:', messageData);
 
-        const { sender, receiver, messageType, textMessage, voiceMessageUrl } = messageData;
+        const { sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageUrl } = messageData;
         
         try {
-            const response = await MessageController.sendInitialMessage(sender, receiver, messageType, textMessage, voiceMessageUrl);
+            const response = await MessageController.sendInitialMessage(sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageUrl);
             console.log('Message sent successfully:', response);
 
             const senderSocketId = userSocketMap[sender];
@@ -132,15 +132,10 @@ io.on('connect', (socket) => {
     socket.on('newMessage', async (messageData) => {
         console.log('New message received:', messageData);
 
-        // const { sender, receiver, messageType, textMessage, voiceMessageUrl } = messageData;
-        const { sender, receiver, messageType, textMessage, voiceMessageSound, voiceMessageDuration, voiceMessageData } = messageData;
-
-        // console.log('Voice message sound:', voiceMessageSound);
-        // console.log('Voice message duration:', voiceMessageDuration);
-        // console.log('Voice message data:', voiceMessageData);
+        const { sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageData } = messageData;
 
         try {
-            const response = await MessageController.addNewMessage(sender, receiver, messageType, textMessage, voiceMessageSound, voiceMessageDuration, voiceMessageData);
+            const response = await MessageController.addNewMessage(sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageData);
             console.log('Message sent successfully:', response);
 
             const senderSocketId = userSocketMap[sender];

@@ -30,6 +30,18 @@ class MessageComm {
             throw error;
         }
     }
+
+    async setOneMessageToRead(_id) {
+        try {
+            const response = await axios.post(`${this.baseUrl}/setOneMessageToRead`, {
+            _id
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error setting message to read:', error.response ? error.response.data : error.message);
+            throw error;
+        }
+    }
 }
 
 export default MessageComm;

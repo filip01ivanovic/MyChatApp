@@ -11,4 +11,8 @@ messageRouter.route("/setMessagesToRead").post(
     (req, res) => new MessageController().setMessagesToRead(req, res)
 );
 
+messageRouter.route("/setOneMessageToRead").post(
+    (req, res) => new MessageController().setOneMessageToRead(req, res)
+);
+
 export default messageRouter;

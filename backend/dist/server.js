@@ -60,9 +60,9 @@ io.on('connect', (socket) => {
     });
     socket.on('initialMessage', (messageData) => __awaiter(void 0, void 0, void 0, function* () {
         console.log('Initial message received:', messageData);
-        const { sender, receiver, messageType, textMessage, voiceMessageUrl } = messageData;
+        const { sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageUrl } = messageData;
         try {
-            const response = yield message_controller_1.MessageController.sendInitialMessage(sender, receiver, messageType, textMessage, voiceMessageUrl);
+            const response = yield message_controller_1.MessageController.sendInitialMessage(sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageUrl);
             console.log('Message sent successfully:', response);
             const senderSocketId = userSocketMap[sender];
             if (senderSocketId) {
@@ -123,13 +123,9 @@ io.on('connect', (socket) => {
     }));
     socket.on('newMessage', (messageData) => __awaiter(void 0, void 0, void 0, function* () {
         console.log('New message received:', messageData);
-        // const { sender, receiver, messageType, textMessage, voiceMessageUrl } = messageData;
-        const { sender, receiver, messageType, textMessage, voiceMessageSound, voiceMessageDuration, voiceMessageData } = messageData;
-        // console.log('Voice message sound:', voiceMessageSound);
-        // console.log('Voice message duration:', voiceMessageDuration);
-        // console.log('Voice message data:', voiceMessageData);
+        const { sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageData } = messageData;
         try {
-            const response = yield message_controller_1.MessageController.addNewMessage(sender, receiver, messageType, textMessage, voiceMessageSound, voiceMessageDuration, voiceMessageData);
+            const response = yield message_controller_1.MessageController.addNewMessage(sender, receiver, messageType, textMessage, voiceMessageDuration, voiceMessageData);
             console.log('Message sent successfully:', response);
             const senderSocketId = userSocketMap[sender];
             if (senderSocketId) {

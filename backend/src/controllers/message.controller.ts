@@ -43,7 +43,7 @@ export class MessageController {
         }
     };
 
-    public static async sendInitialMessage(sender: any, receiver: any, messageType: any, textMessage: any, voiceMessageUrl: any) {
+    public static async sendInitialMessage(sender: any, receiver: any, messageType: any, textMessage: any, voiceMessageDuration: any, voiceMessageUrl: any) {
         if (!sender || !receiver || !messageType || (!textMessage && !voiceMessageUrl)) {
             throw new Error('Sender ID, receiver ID, message type and message are required');
         }
@@ -78,6 +78,7 @@ export class MessageController {
                 receiver,
                 messageType,
                 textMessage,
+                voiceMessageDuration,
                 voiceMessageUrl,
                 sentAt
             });
@@ -92,55 +93,7 @@ export class MessageController {
         }
     }
 
-    // public static async addNewMessage(sender: any, receiver: any, messageType: any, textMessage: any, voiceMessageSound: any, voiceMessageDuration: any, voiceMessageData: any) {
-    //     if (!sender || !receiver || !messageType || (!textMessage && !voiceMessageData)) {
-    //         throw new Error('Sender ID, receiver ID, message type and message are required');
-    //     }
-
-    //     try {
-    //         let chat = await ChatModel.findOne({
-    //             $or: [
-    //                 { participant1: sender, participant2: receiver },
-    //                 { participant1: receiver, participant2: sender }
-    //             ]
-    //         });
-
-    //         const sentAt = new Date();
-
-    //         if (!chat) {
-    //             throw new Error('Chat not found');
-    //         }
-
-    //         chat.lastMessage = {
-    //             messageType,
-    //             text: messageType === 'voice' ? 'Voice message' : (textMessage || ''),
-    //             sentAt
-    //         };
-
-    //         await chat.save();
-
-    //         console.log('Voice message data:', voiceMessageData);
-
-    //         const newMessage = new MessageModel({
-    //             sender,
-    //             receiver,
-    //             messageType,
-    //             textMessage,
-    //             voiceMessageData,
-    //             sentAt
-    //         });
-
-    //         await newMessage.save();
-
-    //         return newMessage;
-
-    //     } catch (error) {
-    //         console.error('Error sending message:', error);
-    //         throw new Error('Server error sending message');
-    //     }
-    // }
-
-    public static async addNewMessage(sender: any, receiver: any, messageType: any, textMessage: any, voiceMessageSound: any, voiceMessageDuration: any, voiceMessageData: any) {
+    public static async addNewMessage(sender: any, receiver: any, messageType: any, textMessage: any, voiceMessageDuration: any, voiceMessageData: any) {
         if (!sender || !receiver || !messageType || (!textMessage && !voiceMessageData)) {
             throw new Error('Sender ID, receiver ID, message type and message are required');
         }
@@ -168,7 +121,6 @@ export class MessageController {
             await chat.save();
 
             let voiceMessageUrl = '';
-            // how to save voice message data to file
             if (voiceMessageData) {
                 const voiceMessageFileName = `${sender}_${receiver}_${sentAt.getTime()}.wav`;
                 const voiceMessageFilePath = path.join(__dirname, `../../files/voice_messages/${voiceMessageFileName}`);
@@ -182,6 +134,7 @@ export class MessageController {
                 receiver,
                 messageType,
                 textMessage,
+                voiceMessageDuration,
                 voiceMessageUrl,
                 sentAt
             });
@@ -227,4 +180,29 @@ export class MessageController {
             res.status(500).json({ message: 'Server error setting messages to read' });
         }
     };
+
+    setOneMessageToRead = async (req: express.Request, res: express.Response) => {
+        const { _id } = req.body;
+
+        if (!_id) {
+            return res.status(400).json({ message: 'Message ID is required' });
+        }
+
+        try {
+            const message = await MessageModel.findById(_id);
+
+            if (!message) {
+                return res.status(404).json({ message: 'Message not found' });
+            }
+
+            message.isRead = true;
+            await message.save();
+
+            res.status(200).json({ message: 'Message set to read' });
+
+        } catch (error) {
+            console.error('Error setting message to read:', error);
+            res.status(500).json({ message: 'Server error setting message to read' });
+        }
+    }
 }

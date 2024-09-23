@@ -9,6 +9,7 @@ const messageSchema = new mongoose.Schema(
             enum: ['text', 'voice']
         },
         textMessage: String,
+        voiceMessageDuration: String,
         voiceMessageUrl: String,
         sentAt: {
             type: Date,
